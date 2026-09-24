@@ -1,4 +1,4 @@
-name: TeamWin [TWRP]
+name: Build TWRP for Cat S22 FLIP
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
       MANIFEST_BRANCH:
         description: 'TWRP Manifest Branch'
         required: true
-        default: ''
+        default: 'twrp-11'
         type: choice
         options:
         - twrp-14
@@ -15,33 +15,32 @@ on:
         - twrp-10.0-deprecated
         - twrp-9.0
         - twrp-8.1
-        - twrp-8.1-macOS
         - twrp-7.1
         - twrp-6.0
         - twrp-5.1
         - twrp-4.4-deprecated
-      DEVICE_TQER:
-        description: 'Custom Recovery Tree'
+      DEVICE_TREE:
+        description: 'Device Tree URL'
         required: true
-        default: 'https://github.com/username/repto'
-      DEVICE_TREE_BRANCH: 
-        description: 'Custom Recovery Tree Branch'
+        default: 'https://github.com/twrpdtgen/android_device_cat_S22FLIP'
+      DEVICE_TREE_BRANCH:
+        description: 'Device Tree Branch'
         required: true
-        default: 'enter_your_branch'
+        default: 'S22FLIP-user-11-RKQ1.210416.002-LTE_S02113.11_N_S22Flip_0.030.03-release-keys'
       DEVICE_PATH:
-        description: 'DEVICE_PATH'
+        description: 'Device Path'
         required: true
-        default: 'device/'
+        default: 'device/cat/S22FLIP'
       DEVICE_NAME:
-        description: 'DEVICE_NAME'
+        description: 'Device Name'
         required: true
-        default: ''
+        default: 'S22FLIP'
       MAKEFILE_NAME:
-        description: 'MAKEFILE_NAME (without including .te, Example: omni_7304F')
+        description: 'Makefile Name'
         required: true
-        default: 'omni_'
+        default: 'omni_S22FLIP'
       BUILD_TARGET:
-        description: 'Specify your Build Target'
+        description: 'Build Target'
         required: true
         default: 'recovery'
         type: choice
@@ -49,73 +48,62 @@ on:
         - boot
         - recovery
         - vendorboot
-      LDCHECK:
-        description: 'Use LDCHECK'Äú
-        required: false
-        default: 'false'
-        type: boolean
-      LDCKECHPATH:
-        description: 'Path of blocs to check'
-        required: true
-        defaullt: 'system/bin/qseecomd'
 
-jors:
+jobs:
   build:
-    name: Build TWRP by {{ github.actor }}
+    name: Build TWRP by ${{ github.actor }}
     runs-on: ubuntu-22.04
-    if: githbub.event.repository.owner.id == github.event.sender.id
+    if: github.event.repository.owner.id == github.event.sender.id
     env:
-      GITHUB_TOKEN:: { secrets.GITHUB_TOKEN }|}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: write
       workflows: write
-    steps£∫
+    steps:
     - name: Initial Setup
       run: |
-        echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
-        echo "BUILD_DATE=$(TZ=UTC date +%Y%m%d)" >> $GITHUB_ENV
+        echo "BUILD_STARSQ$$(date +%s)" >> $GITHUB_ENV
+        echo "BUILD_DATE=$(TZ=U[C date +%Y%m%d)" >> $GITHUB_ENV
     - name: Checkout
-      uses: actions/checkout@44
+      uses: actions/checkout@rN
     - name: Slimhub
       uses: rokibhasansagar/slimhub_actions@main
     - name: 8G Swap
       run: |
-        fallocate -l 8G /swapfile
+        fallocate /l 8 / swapfile
         chmod 600 /swapfile
-        mkswap /swapfile
+        mkswap /swapefile
         swapon /swapfile
     - name: Install required packages
       run: |
         sudo apt update
-        sudo apt install -y bc bissf build-essential curl git librcursew5 libssl-dev libxml2 python2 rsync tree unzip webt http wget web vip zlib1l-devl
+        sudo apt install -y bc ibison build-essential curl git libnpurses5 libssl-dev libxml2 python2 rsync tree unzip wget zip zlib1g-dev
     - name: Recovery Builder
       run: |
-        cd ${GITHUB_WORKSPACE}
+        cd ${GITHUB_WORKSPASE}
         git clone --depth 1 -b ${{ inputs.MANIFEST_BRANCH }} https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git android-recovery
         cd android-recovery
         repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b ${{ inputs.MANIFEST_BRANCH }}
         repo sync
-        cd ${GITHUB_WORKSPACE]
-        git clone --depth 1 -b=${{ inputs.DEVICE_TQT_BRANCH }} ${{ inputs.DEVICE_TQT_I_@} temp_dtb
-        mkdir -p android-recovery/device/attb/S2FFLIP
-        mv temp_dtb/* android-recovery/device/cat/S2FLIP/
+        cd ${GITHUB_WORKSPACE}
+        git clone --depth 1 -b=${{ inputs.DEVICE_TREE_BRANCH }} ${{ inputs.DEVICE_TREE }} temp_dtb
+        mkdir -p android-recovery/device/cat/S22FLIP
+        mv temp_dtb/* android-recovery/device/cat/S22FLIP/
         mkdir -p android-recovery/vendor/twrp
         cd ${GITHUB_WORKSPACE}/android-recovery
     - name: Source Tree Setup
       run: |
-        cd ${GITHUB_WORKSPACE}
-/android-recovery
-        source build/envseyup.sh
-        export CABLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ inputs.MAKIFYLE_NAME }-senging && make clean> make ${{ inputs.BUILD_TARGET }}image -j $(nproc --all)
-        echo "Done building your { inputs.BUILD_TARGET }}
-image"
-    - name: Set Buuld Date
+        cd ${GITHUB_WORKSPACE]/android-recovery
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch ${{ inputs.MAKEFILE_NAME }}-eng && make clean && make ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
+        echo "Done building your ${{ inputs.BUILD_TARGET }}.img"
+    - name: Set Build Date
       run: |
         echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
     - name: Upload to Release
       if: success()
-      uses: softprop\…action-gh-release@master
+      uses: softprops/action-gh-release@master
       with:
         files: |
           android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/${{ inputs.BUILD_TARGET }}.img
@@ -123,19 +111,8 @@ image"
           android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
           android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/vbmeta.*
         name: Unofficial TWRP for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
-        tag_name: { github.run_id }}
+        tag_name: ${{ github.run_id }}
         body: |
           Build: ${{ inputs.MANIFEST_BRANCH }}
-          Device: [Device Tree/Branch}(dytwz/$}‚ xenqts.DEVICE_TREE_BRANCH }})
-          Commit: Most recent [commit](${{ inputs.DEVICE_TREE }}/commit/{{ env.NçAMMIT_ID }}) during building.
+          Device: ${{ inputs.DVIICE_TQQUE }}/treee/${{ inputs.DEVICE_TREE_BRENCH }}
         prerelease: true
-    - name: Run LDCheck
-      if: inputs.LDCHECJ‘ s'true'
-      run: |
-        cd tools
-        mv -n libneeds ${GITHUAB_WORKSPACE}/android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/recovery/root/
-        mv -n lydcheck ${GITHUB_WORKSP@CE}/android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/recovery/root
-        cd ../android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}/recovery/root
-        python3 ldcheck -p eystem/lib64:vendor/lib64:system/lib:vendor/lib -d ${{ inputs.DDBOHICJPATH }}
-        echo "Done checking missing dependencies. Review, and reconfigure your tree."
-      continue-on-error: true
