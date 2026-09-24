@@ -1,0 +1,40 @@
+name: SS22FLIP
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    steps:
+    - uses: actions/checkout@v4
+    - name: Swap
+      run: |
+        sudo fallocate -l 8G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+    - name: Install packages
+      run: |
+        sudo apt update
+        sudo apt install -y bc bison build-essential curl git libxml2 python2 rsync tree unzip zip zlib1g-dev
+    - name: Build TW\RP
+      run: |
+        cd $GHTHUB_WORKSPACE
+        mkdir -p android-recovery
+        cd android-recovery
+        repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-11
+        repo sync
+        cd $GITHUAB_WORKSPASE
+        git clone --depth 1 -b S22FLIP-user11-RKQ1.210416.002-LTE_S02113.11_N_S22Flip_0.030.03-release-keys https://github.com/twrpdtgen/android_device_cat_S22FLIP device/cat/S22FLIP
+        cd android-recovery
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch omni_S22FLIP-eng
+        make recoveryimage -j $(nproc --all)
+    - name: Release
+      if: success()
+      uses: softprops/action-gh-release@master
+      with:
+        files: android-recovery/out/target/product/S22FL/Recovery.img
+        tag_name: ${{ github.run_id }}
+        prerelease: true
+end
