@@ -34,6 +34,73 @@ jobs:
 
       - name: Initialize and sync TWRP source
         run: |
+          set -eo pipefail
+          git config --global user.name "TWRP Builder"
+          git config --global user.email "twrp-builder@localhost"
+          mkdir -p android-recovery
+          cd android-recovery
+          repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-11
+          repo sync -c --no-clone-bundle --no-tags -j2
+
+      - name: Add CAT S22 device tree
+        run: |
+          set -euxo pipefail
+          git clone --depth=1 --branch 'S22FLIP-user-11-RKQ1.210416.002-LTE_S02113.11_N_S22Flip_0.030.03-release-keys' https://github.com/twrpdtgen/android_device_cat_S22FLIP.git device-tree
+          mv device-tree/omni_S22FLIP.mk device-tree/twrp_S22FLIP.mk
+          sed -i 's/omni_S22FLIP/twrp_S22FLIP/g; s#vendor/omni/config/common.mk#vendor/twrp/config/common.mk#' device-tree/AndroidProducts.mk device-tree/twrp_S22FLIP.mk
+          mkdir -p android-recovery/device/cat/S22FLIP
+          cp -a device-tree/. android-recovery/device/cat/S22FLIP/
+
+      - name: Build recovery image
+        run: |
+          set -eo pipefail
+          cd android-recovery
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          lunch twrp_S22FLIP-eng
+          mka -j2 recoveryimage
+
+      - name: Upload recovery image
+        uses: actions/upload-artifact@v4
+        with:
+          name: cat-s22-flip-twrp-android-11
+          path: android-recovery/out/target/product/S22FLIP/recovery.img
+          if-no-files-found: errorname: Build TWRP for CAT S22 Flip (Android 11)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out builder
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Free runner space and install build tools
+        run: |
+          set -euxo pipefail
+          sudo rm -rf /usr/local/lib/android/sdk /usr/share/dotnet /opt/ghc /usr/local/share/powershell /usr/share/swift
+          df -h /
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick lib32ncurses-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses-dev libssl-dev libxml2 libxml2-utils lzop python-is-python3 rsync schedtool squashfs-tools xsltproc zip zlib1g-dev
+          mkdir -p "$HOME/bin"
+          curl -L https://storage.googleapis.com/git-repo-downloads/repo -o "$HOME/bin/repo"
+          chmod +x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Initialize and sync TWRP source
+        run: |
           set -euxo pipefail
           git config --global user.name "TWRP Builder"
           git config --global user.email "twrp-builder@localhost"
