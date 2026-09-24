@@ -58,7 +58,7 @@ jobs:
       - name: Sync source
         working-directory: android-recovery
         run: |
-          repo sync --force-sync --no-clone-bundle --no-tags -j$(nproc --all)
+       repo sync --force-sync --no-clone-bundle --no-tags -j4
 
       - name: Clone Cat S22 Flip device tree
         working-directory: android-recovery
@@ -74,8 +74,7 @@ jobs:
           export ALLOW_MISSING_DEPENDENCIES=true
           lunch "${BUILD_TARGET}"
           make clean
-          make recoveryimage -j$(nproc --all)
-
+         make recoveryimage -j4
       - name: Upload recovery image
         if: success()
         uses: softprops/action-gh-release@v2
