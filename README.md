@@ -1,3 +1,9 @@
+## CAT S22 Flip Android 11 build notes
+
+For the device-specific experimental workflow, build steps, temporary-boot test, and known limitations, see [CAT-S22-FLIP-ANDROID-11.md](CAT-S22-FLIP-ANDROID-11.md). The image and BCB fallback are experimental; read the test warnings before using either.
+
+---
+
 # Recovery Builder for |TWRP / PBRP / OFRP / SHRP|
 Compile your first custom recovery via Github Actions.
 
