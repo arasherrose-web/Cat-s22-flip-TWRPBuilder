@@ -9,6 +9,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     container:
       image: ghcr.io/catthehacker/ubuntu:runner-18.04
 
@@ -53,18 +54,22 @@ jobs:
           cd android-recovery
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          repo init --depth=1 -u https://github.com/mlm-games/platform_manifest_twrp_omni -b twrp-10.0-deprecated
+          repo init --depth=1 \
+            -u https://github.com/mlm-games/platform_manifest_twrp_omni \
+            -b twrp-10.0-deprecated
 
       - name: Sync source
         working-directory: android-recovery
         run: |
-       repo sync --force-sync --no-clone-bundle --no-tags -j4
+          repo sync --force-sync --no-clone-bundle --no-tags -j4
 
       - name: Clone Cat S22 Flip device tree
         working-directory: android-recovery
         run: |
           mkdir -p "${DEVICE_PATH}"
-          git clone --depth=1 -b main https://github.com/CatS22Flip-Devs/android_device_cat_S22FLIP-twrp "${DEVICE_PATH}"
+          git clone --depth=1 -b main \
+            https://github.com/CatS22Flip-Devs/android_device_cat_S22FLIP-twrp \
+            "${DEVICE_PATH}"
 
       - name: Build recovery
         working-directory: android-recovery
@@ -74,7 +79,8 @@ jobs:
           export ALLOW_MISSING_DEPENDENCIES=true
           lunch "${BUILD_TARGET}"
           make clean
-         make recoveryimage -j4
+          make recoveryimage -j4
+
       - name: Upload recovery image
         if: success()
         uses: softprops/action-gh-release@v2
