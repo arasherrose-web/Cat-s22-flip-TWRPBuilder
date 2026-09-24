@@ -1,8 +1,0 @@
-name: TWRP
-on: workflow_dispatch
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v4
-    - run: echo "TWRP build for S22FLIP"
