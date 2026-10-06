@@ -115,6 +115,21 @@ jobs:
         run: |
           set -eo pipefail
           cd android-recovery
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('device/cat/S22FLIP/BoardConfig.mk')
+          text = path.read_text()
+          appended = 'TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/kernel-with-appended-dtb'
+          stock = 'TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/kernel'
+          text = text.replace(appended, stock)
+          dtb = 'TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb.img'
+          if dtb not in text:
+              raise SystemExit('CAT S22 prebuilt dtb.img setting is missing')
+          arg = 'BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)'
+          if arg not in text:
+              text += '\n' + arg + '\n'
+          path.write_text(text)
+          PY
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           lunch twrp_S22FLIP-eng
