@@ -110,6 +110,7 @@ jobs:
         echo 'TW_MAX_BRIGHTNESS := 255' >> BoardConfig.mk
         echo 'TW_DEFAULT_BRIGHTNESS := 80' >> BoardConfig.mk
         echo 'TW_INCLUDE_FASTBOOTD := true' >> BoardConfig.mk
+        echo 'TW_HAS_EDL_MODE := true' >> BoardConfig.mk
         echo '' >> device.mk
         echo '# fastbootd binary (added by the builder workflow)' >> device.mk
         echo 'PRODUCT_PACKAGES += fastbootd' >> device.mk
@@ -131,6 +132,49 @@ jobs:
         echo '/modem emmc /dev/block/bootdevice/by-name/modem flags=display=modem;flashimg;backup' >> recovery.fstab
         echo '/dsp emmc /dev/block/bootdevice/by-name/dsp flags=display=dsp;flashimg;backup' >> recovery.fstab
         grep -q '^/system_image ' recovery.fstab && grep -q '^/dsp ' recovery.fstab || { echo 'fstab append failed'; exit 1; }
+
+    - name: Add Fastboot and Screenshot menu entries
+      run: |
+        cd ${{ env.ORANGEFOX_ROOT }}
+        patched=0
+        failed=0
+        for theme_file in $(find bootable/recovery -name 'advanced.xml' -exec grep -l 'adb_sideload_btn' {} + 2>/dev/null); do
+          echo "Patching theme file: $theme_file"
+          if python3 - "$theme_file" <<'PYEOF'
+        import sys, xml.etree.ElementTree as ET
+        path = sys.argv[1]
+        text = open(path).read()
+        if '<action function="page">fastboot</action>' in text:
+            print('already patched, skipping')
+            sys.exit(0)
+        anchor = '<listitem name="{@adb_sideload_btn}">'
+        idx = text.find(anchor)
+        if idx < 0:
+            print('sideload listitem not found')
+            sys.exit(1)
+        close_idx = text.find('</listitem>', idx)
+        if close_idx < 0:
+            print('sideload listitem has no closing tag')
+            sys.exit(1)
+        insert_at = close_idx + len('</listitem>')
+        snippet = '\n\t\t\t\t<listitem name="{@fastboot_button}">\n\t\t\t\t\t<icon res="reboot_fastboot"/>\n\t\t\t\t\t<condition var1="tw_fastboot_mode" var2="1"/>\n\t\t\t\t\t<action function="page">fastboot</action>\n\t\t\t\t</listitem>\n\t\t\t\t<listitem name="Screenshot">\n\t\t\t\t\t<icon res="devices"/>\n\t\t\t\t\t<action function="screenshot"/>\n\t\t\t\t</listitem>'
+        new_text = text[:insert_at] + snippet + text[insert_at:]
+        try:
+            ET.fromstring(new_text)
+        except Exception as e:
+            print('patched XML does not parse:', e)
+            sys.exit(1)
+        open(path, 'w').write(new_text)
+        print('patched ok')
+        PYEOF
+          then
+            patched=$((patched+1))
+          else
+            failed=$((failed+1))
+          fi
+        done
+        echo "patched=$patched failed=$failed"
+        if [ "$patched" -lt 1 ]; then echo 'no theme file was patched'; exit 1; fi
 
     - name: Building OrangeFox
       run: |
