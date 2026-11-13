@@ -109,6 +109,28 @@ jobs:
         echo 'TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"' >> BoardConfig.mk
         echo 'TW_MAX_BRIGHTNESS := 255' >> BoardConfig.mk
         echo 'TW_DEFAULT_BRIGHTNESS := 80' >> BoardConfig.mk
+        echo 'TW_INCLUDE_FASTBOOTD := true' >> BoardConfig.mk
+        echo '' >> device.mk
+        echo '# fastbootd binary (added by the builder workflow)' >> device.mk
+        echo 'PRODUCT_PACKAGES += fastbootd' >> device.mk
+        # Reboot-to-system fix: in recovery, libfstab (which TWRP uses to
+        # clear the bootloader message) reads only /etc/recovery.fstab, in
+        # AOSP column order. The /misc line in TWRP order never parses, so
+        # the stale boot-recovery command survives every boot. Rewrite it.
+        sed -i -E 's|^/misc[[:space:]]+emmc[[:space:]]+/dev/block/bootdevice/by-name/misc.*|/dev/block/bootdevice/by-name/misc /misc emmc defaults defaults|' recovery.fstab
+        grep -q '^/dev/block/bootdevice/by-name/misc /misc emmc defaults defaults$' recovery.fstab || { echo 'misc line replacement failed'; exit 1; }
+        # Image-flash targets: logical partitions via their mapped devices
+        # (no logical flag: that would make them vanish from the list),
+        # plus the firmware partitions from the stock updater-script.
+        echo '/system_image emmc /dev/block/mapper/system flags=flashimg' >> recovery.fstab
+        echo '/vendor_image emmc /dev/block/mapper/vendor flags=flashimg' >> recovery.fstab
+        echo '/product_image emmc /dev/block/mapper/product flags=display=Product_Image;flashimg' >> recovery.fstab
+        echo '/dtbo emmc /dev/block/bootdevice/by-name/dtbo flags=display=dtbo;flashimg;backup' >> recovery.fstab
+        echo '/vbmeta emmc /dev/block/bootdevice/by-name/vbmeta flags=display=vbmeta;flashimg;backup' >> recovery.fstab
+        echo '/vbmeta_system emmc /dev/block/bootdevice/by-name/vbmeta_system flags=display=vbmeta_system;flashimg;backup' >> recovery.fstab
+        echo '/modem emmc /dev/block/bootdevice/by-name/modem flags=display=modem;flashimg;backup' >> recovery.fstab
+        echo '/dsp emmc /dev/block/bootdevice/by-name/dsp flags=display=dsp;flashimg;backup' >> recovery.fstab
+        grep -q '^/system_image ' recovery.fstab && grep -q '^/dsp ' recovery.fstab || { echo 'fstab append failed'; exit 1; }
 
     - name: Building OrangeFox
       run: |
