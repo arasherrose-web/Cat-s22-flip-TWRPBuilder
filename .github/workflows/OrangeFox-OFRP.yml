@@ -14,19 +14,19 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree'
         required: true
-        default: 'https://github.com/<username>/<repo_name>'
+        default: 'https://github.com/arasherrose-web/android_device_cat_S22FLIP'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch (use master if default)'
         required: true
-        default: 'your_branch_name'
+        default: 'S22FLIP-user-11-RKQ1.210416.002-LTE_S02113.11_N_S22Flip_0.030.03-release-keys'
       DEVICE_NAME:
         description: 'Specify your Device Codename' # As is, just like your PRODUCT_DEVICE in your device tree.
         required: true
-        default: '7304X'
+        default: 'S22FLIP'
       DEVICE_PATH:
         description: 'Specify your Device Path (Check the DEVICE_PATH in BoardConfig.mk)' # As is, just like your DEVICE_PATH in your BoardConfig.mk
         required: true
-        default: 'device/device`s_company/Codename'
+        default: 'device/cat/S22FLIP'
       BUILD_TARGET:
         description: 'Specify your Build Target' # The image suffix will be added later in build step.
         required: true
@@ -49,7 +49,7 @@ on:
 jobs:
   build:
     name: Build OFRP by ${{ github.actor }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,6 +98,13 @@ jobs:
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Adapt device tree for OrangeFox
+      run: |
+        cd ${{ env.ORANGEFOX_ROOT }}/${{ inputs.DEVICE_PATH }}
+        mv omni_${{ inputs.DEVICE_NAME }}.mk twrp_${{ inputs.DEVICE_NAME }}.mk
+        sed -i 's/omni_${{ inputs.DEVICE_NAME }}/twrp_${{ inputs.DEVICE_NAME }}/g; s#vendor/omni/config/common.mk#vendor/twrp/config/common.mk#' AndroidProducts.mk twrp_${{ inputs.DEVICE_NAME }}.mk
+        rm -f vendorsetup.sh
 
     - name: Building OrangeFox
       run: |
